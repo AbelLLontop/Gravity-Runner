@@ -53,4 +53,13 @@ export const state = {
     volDisplayT: 0,
     lastTier: 0,
     tierMsg: { text: '', sub: '', t: 0, tier: 0 },
+    // ── New: music-reactive controller state ─────────────────────────────
+    totalMapWidth: 0,          // total pixel width of all blocks
+    musicSpeedMult: 1.0,       // current real-time speed multiplier from music energy
+    controllerError: 0,        // sync error (distance ahead/behind)
+    smoothSpeedFactor: 1.0,    // smoothed energy envelope factor
+    beatPulse: 0,              // transient beat pulse (decays per frame)
+    rmsMax: 0.01,              // dynamic max volume tracking for color
+    rmsMin: 1.0,               // dynamic min volume tracking for color
+    outroInjected: false,      // flag to ensure outro is only injected once
 };

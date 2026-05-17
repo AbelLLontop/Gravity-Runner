@@ -27,12 +27,21 @@ export function genObstacles(song, duration) {
         curX += bw;
     }
 
-    const countdownTime = (countdownBlocks * bw) / spd;
-    let actionDuration = Math.max(0, duration - 5 - countdownTime);
-    let numActionBlocks = Math.ceil(actionDuration / 0.5);
-
     const profile = song.beatProfile;
-    const hasProfile = Array.isArray(profile) && profile.length > 0;
+    const hasProfile = profile && profile.energyProfile && profile.energyProfile.length > 0;
+    
+    // We don't need to perfectly calculate the map length anymore.
+    // We will generate an abundance of blocks (enough for 2.5x speed)
+    // and dynamically cut to the outro when the song has exactly 5 seconds left.
+    const actionDuration = Math.max(0, duration);
+    const safeMaxSpeedMult = 2.5; 
+    const actionDist = actionDuration * (spd * safeMaxSpeedMult);
+    let numActionBlocks = Math.ceil(actionDist / bw);
+
+    // Approximate time spent in countdown (for terrain generation syncing)
+    const countdownTimeActual = (countdownBlocks * bw) / spd;
+
+    const energyArr = hasProfile ? profile.energyProfile : [];
     const profileCenter = Math.floor(LEVELS.length / 2);
 
     let patternType = 'NONE';
@@ -64,8 +73,11 @@ export function genObstacles(song, duration) {
             targetGY = (i % 2 === 0) ? LEVELS[1] : LEVELS[5];
         } else {
             if (hasProfile) {
-                let pidx = (countdownBlocks + i) % profile.length;
-                let musicIdx = Math.round(profile[pidx] * (LEVELS.length - 1));
+                // Map the energy profile window to this block's time position
+                const blockTimeSec = countdownTimeActual + i * 0.5;
+                const windowMs = profile.windowMs || 100;
+                const pidx = Math.min(energyArr.length - 1, Math.floor((blockTimeSec * 1000) / windowMs));
+                let musicIdx = Math.round(energyArr[pidx] * (LEVELS.length - 1));
                 if (Math.random() < 0.3) musicIdx = Math.max(0, Math.min(LEVELS.length - 1, musicIdx + (Math.random() > 0.5 ? 1 : -1)));
                 targetGY = LEVELS[musicIdx];
             } else {
@@ -90,6 +102,9 @@ export function genObstacles(song, duration) {
         patternCount--;
     }
 
-    const outroWidth = 5 * spd;
-    addBlock(curX, outroWidth, curGY, true);
+    // We do not append the outro block here. The physics engine will dynamically
+    // inject it exactly when 5.0 seconds remain in the song.
+    
+    // Reset closed-loop variables since we don't need them anymore
+    state.totalMapWidth = 0;
 }

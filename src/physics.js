@@ -74,42 +74,129 @@ export function updBlocks(dt) {
     if (gs !== GS.PLAY && gs !== GS.COUNTDOWN) return;
 
     const spd = getSpeed();
-    let v_ideal = spd;
 
-    const outroBlock = blocks[blocks.length - 1];
+    // ══════════════════════════════════════════════════════════════════════════
+    //  MUSIC-REACTIVE SPEED CONTROLLER
+    //
+    //  The map is a fixed "road" of uniform blocks. Only the scroll speed
+    //  changes in real time, driven by two independent musical layers:
+    //
+    //    LAYER 1 — Sustained Energy Envelope (smooth, follows song dynamics)
+    //      Maps the overall loudness/energy to a base speed multiplier.
+    //      Quiet intro → slow crawl, loud chorus → fast rush.
+    //
+    //    LAYER 2 — Transient Beat Pulse (punchy, follows individual hits)
+    //      On each detected beat/onset, inject a short speed burst that
+    //      decays naturally. Creates the "pumping" rhythm feel.
+    //
+    //  Both layers are combined and then corrected by a sync controller
+    //  that ensures the map finishes when the song ends.
+    // ══════════════════════════════════════════════════════════════════════════
+    // ── Base Setpoint ────────────────────────────────────────────────────────
+    // We start with the base speed. The dynamic speed mapping and the 
+    // proportional closed-loop sync controller (below) will handle keeping us 
+    // perfectly aligned with the music.
+    state.v_target = spd;
 
-    if (Sfx.aud && Sfx.aud.src && !Sfx.aud.paused && isFinite(Sfx.aud.duration)) {
-        const timeLeft = Sfx.aud.duration - Sfx.aud.currentTime;
-        if (timeLeft > 5) {
-            const remActiveTime = timeLeft - 5;
-            if (outroBlock) {
-                const distanceToOutro = outroBlock.x - C.PX;
-                if (distanceToOutro > 0 && remActiveTime > 0.1) {
-                    v_ideal = distanceToOutro / remActiveTime;
-                }
-            }
-        } else if (timeLeft > 0) {
-            if (outroBlock) {
-                const distanceToOutroTail = outroBlock.x + outroBlock.w - C.PX;
-                if (distanceToOutroTail > 0) {
-                    v_ideal = distanceToOutroTail / timeLeft;
-                }
+    // ── LAYER 1: Pre-calculated Mapped Speed ────────────────────────────────
+    // Reads the speed from the offline analysis map. This guarantees high
+    // variation between quiet and loud sections, acting like a hand-mapped level.
+    let mappedFactor = 1.0;
+    let usedOfflineMap = false;
+    
+    if (state.curSong && state.curSong.beatProfile && state.curSong.beatProfile.speedProfile) {
+        const bp = state.curSong.beatProfile;
+        if (Sfx.aud && !Sfx.aud.paused) {
+            const timeSec = Sfx.aud.currentTime;
+            const idx = Math.floor((timeSec * 1000) / bp.windowMs);
+            if (idx >= 0 && idx < bp.speedProfile.length) {
+                mappedFactor = bp.speedProfile[idx];
+                usedOfflineMap = true;
             }
         }
     }
+    
+    if (!usedOfflineMap) {
+        // Fallback to real-time relative metrics if no pre-analyzed map is available,
+        // or if we reached the end of the pre-calculated array (e.g., if the browser 
+        // truncated the offline decode of a very long song).
+        const flux = Sfx.smoothFlux || 0;
+        const dynamics = Sfx.localDynamics || 0.5;
+        const energy = Sfx.instantEnergy || 0;
+        const fluxComponent    = flux * 1.4;
+        const dynamicsComponent = (dynamics - 0.5) * 1.0;
+        const baseComponent    = 0.35 + Math.pow(energy, 0.6) * 0.5;
+        mappedFactor = Math.max(0.25, Math.min(2.2, baseComponent + fluxComponent + dynamicsComponent));
+    }
 
-    // Clamp v_ideal to prevent extreme speeds during lag spikes
-    v_ideal = Math.max(spd * 0.4, Math.min(spd * 2.5, v_ideal));
+    const envelopeFactor = mappedFactor;
 
-    // Smoothly LERP state.v_target towards v_ideal by 2% per frame
-    // This allows music-reactive speed fluctuations to breathe without being canceled out!
-    state.v_target += (v_ideal - state.v_target) * 0.02;
+    // Fast smooth — responds in ~3 frames at 60fps
+    const envLerp = Math.min(1, dt * 0.022);
+    state.smoothSpeedFactor += (envelopeFactor - state.smoothSpeedFactor) * envLerp;
 
-    // Dynamic music-reactive speed using smoothed RMS energy mapped from 0.0 to 0.25 (typical music RMS range)
-    const norm = Math.min(1.0, state.smoothedRMS / 0.25);
-    const speedFactor = 0.6 + norm * 0.9; // speed range: [60%, 150%] of required speed
+    // ── LAYER 2: Transient Beat Pulse ────────────────────────────────────────
+    //  On each detected beat, spike the speed and let it decay naturally.
+    //  Beats are now detected via spectral flux too, so they fire in loud sections.
+    if (Sfx.isBeat) {
+        // Pulse strength scales with beat intensity (0.15 to 0.60 boost)
+        const pulseStrength = 0.15 + Sfx.beatIntensity * 0.45;
+        // Only set if new pulse is stronger than remaining decay
+        if (pulseStrength > state.beatPulse) {
+            state.beatPulse = pulseStrength;
+        }
+    }
+    if (state.beatPulse === undefined) state.beatPulse = 0;
 
-    const mv = state.v_target * speedFactor * (dt / 1000);
+    // Faster decay (~120ms half-life) for more rhythmic pumping
+    const decayRate = Math.min(1, dt * 0.010);
+    state.beatPulse *= (1 - decayRate);
+    if (state.beatPulse < 0.005) state.beatPulse = 0;
+
+    const beatMultiplier = 1.0 + state.beatPulse;
+
+    // ── Combine layers ───────────────────────────────────────────────────────
+    //  Envelope provides the sustained dynamic feel, beat pulse adds rhythmic kicks
+    const musicFactor = state.smoothSpeedFactor * beatMultiplier;
+
+    // ── Dynamic Outro Injection ──────────────────────────────────────────────
+    // Instead of forcing the speed to match a pre-calculated map length, we
+    // let the speed follow the music perfectly, and simply inject the outro
+    // block EXACTLY when there are 5.0 seconds left in the song.
+    if (Sfx.aud && Sfx.aud.src && !Sfx.aud.paused && isFinite(Sfx.aud.duration)) {
+        const timeLeft = Sfx.aud.duration - Sfx.aud.currentTime;
+        if (timeLeft <= 5.0 && !state.outroInjected) {
+            state.outroInjected = true;
+            
+            // Find the active block that the player is currently on or immediately approaching
+            let activeIdx = 0;
+            for (let i = 0; i < blocks.length; i++) {
+                if (blocks[i].x + blocks[i].w > C.PX) {
+                    activeIdx = i;
+                    break;
+                }
+            }
+            
+            // Keep up to the active block, but delete everything after it
+            blocks.length = activeIdx + 1;
+            const lastB = blocks[activeIdx];
+            
+            // Add a ridiculously long outro block for the player to slide on 
+            // until the song naturally triggers 'audioEnded' and Game Over.
+            const outroW = 320 * 4.0 * 10.0; // Overkill length
+            blocks.push({
+                x: lastB.x + lastB.w, w: outroW, gy: lastB.gy, gap: C.GAP, 
+                passed: false, hit: false, scored: false, sndTouch: false, noScore: true 
+            });
+        }
+    }
+    
+    // ── Final speed ──────────────────────────────────────────────────────────
+    const finalSpeed = state.v_target * musicFactor;
+    const mv = finalSpeed * (dt / 1000);
+
+    // Store for visual feedback and debugging
+    state.musicSpeedMult = musicFactor;
 
     for (const b of blocks) {
         b.x -= mv;

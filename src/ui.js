@@ -103,7 +103,7 @@ export function startPlay(song) {
             genObstacles(song, dur);
             Sfx.playMusic(state.volume);
             profilePromise.then(profile => {
-                if (profile.length > 0 && state.gs === GS.COUNTDOWN) {
+                if (profile && profile.energyProfile && profile.energyProfile.length > 0 && state.gs === GS.COUNTDOWN) {
                     song.beatProfile = profile;
                     genObstacles(song, dur);
                 }
@@ -191,6 +191,16 @@ function resetGame() {
     state.dynamicGap = C.GAP;
     state.v_target = 320;
     state.lastTier = 0; state.tierMsg = { text: '', sub: '', t: 0, tier: 0 };
+    // New controller state
+    state.totalMapWidth = 0;
+    state.musicSpeedMult = 1.0;
+    state.controllerError = 0;
+    state.smoothSpeedFactor = 1.0;
+    state.smoothedRMS = 0;
+    state.beatPulse = 0;
+    state.rmsMax = 0.01;
+    state.rmsMin = 1.0;
+    state.outroInjected = false;
 }
 
 // ─── Fullscreen mode ─────────────────────────────────────────────────────────

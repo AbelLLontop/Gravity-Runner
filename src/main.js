@@ -31,29 +31,54 @@ function loop(now) {
 
     if (!state.paused) {
         if (Sfx.ana) {
-            const vol = Sfx.getVol();
+            // ── Unified per-frame audio analysis ─────────────────────────
+            Sfx.analyze(dt);
+
+            // Legacy compat: keep smoothedRMS updated for any remaining uses
+            // ── Visual: hue shifts from Blue (calm) to Red (intense) ─────
+            // Driven purely by the absolute perceived volume (RMS) of the song.
+            // We dynamically track the song's loudest and quietest moments.
             const rawRMS = Sfx.getRMS();
-            state.smoothedRMS = state.smoothedRMS * 0.8 + rawRMS * 0.2;
+            state.smoothedRMS = state.smoothedRMS * 0.8 + rawRMS * 0.2; // Smooth tracking
+            
+            // Adapt min/max trackers
+            if (state.smoothedRMS > state.rmsMax) state.rmsMax = state.smoothedRMS;
+            if (state.smoothedRMS < state.rmsMin && state.smoothedRMS > 0.005) state.rmsMin = state.smoothedRMS;
+            
+            // Very slowly decay the bounds so it adapts if the song changes structure
+            state.rmsMax *= 0.9995;
+            state.rmsMin += (0.1 - state.rmsMin) * 0.0002;
 
-            const targetHue = 200 + (vol / 120) * 160;
-            state.curHue += (targetHue - state.curHue) * 0.1;
+            // Map current volume within the tracked bounds
+            const range = Math.max(0.02, state.rmsMax - state.rmsMin);
+            let power = (state.smoothedRMS - state.rmsMin) / range;
+            power = Math.max(0, Math.min(1.0, power));
+            
+            // Make the curve exponential so it stays in Blue/Purple for most of the song,
+            // and only hits bright Red during the ABSOLUTE loudest peaks.
+            power = Math.pow(power, 1.6);
+            
+            // Map power: 0.0 -> Blue (240), 1.0 -> Red (360)
+            const targetHue = 240 + (power * 120);
+            state.curHue += (targetHue - state.curHue) * 0.08; // smooth transition
 
-            state.smoothEnergy += (vol - state.smoothEnergy) * 0.08;
-            state.energyMult += (state.smoothEnergy / 60 - state.energyMult) * 0.04;
-            state.energyMult = Math.max(0.55, Math.min(2.0, state.energyMult));
+            // ── Visual: energy multiplier from combined bands ────────────
+            const totalE = Sfx.instantEnergy * 255;
+            state.smoothEnergy += (totalE - state.smoothEnergy) * 0.12;
+            state.energyMult += (state.smoothEnergy / 60 - state.energyMult) * 0.08;
+            state.energyMult = Math.max(0.55, Math.min(2.5, state.energyMult));
 
-            const targetGap = Math.max(90, Math.min(C.GAP, C.GAP * (1.0 - (state.smoothEnergy / 120) * 0.35)));
-            state.dynamicGap += (targetGap - state.dynamicGap) * 0.03;
+            // ── Dynamic gap: tighter gap during loud sections ────────────
+            const targetGap = Math.max(90, Math.min(C.GAP, C.GAP * (1.0 - Sfx.instantEnergy * 0.35)));
+            state.dynamicGap += (targetGap - state.dynamicGap) * 0.06;
 
-            state.beatCooldown -= dt;
-            if ((state.gs === GS.PLAY || state.gs === GS.COUNTDOWN) && vol > state.lastBeatEnergy * 1.35 && vol > 30 && state.beatCooldown <= 0) {
+            // ── Beat reaction: use real onset detector ───────────────────
+            if ((state.gs === GS.PLAY || state.gs === GS.COUNTDOWN) && Sfx.isBeat) {
                 const dir = state.pl.grav === 'UP' ? -1 : 1;
-                state.pl.vy += dir * 4.5;
+                state.pl.vy += dir * (3.0 + Sfx.beatIntensity * 3.0);
                 state.pl.sq = 80;
-                state.beatFlash = 0.18;
-                state.beatCooldown = 200;
+                state.beatFlash = 0.12 + Sfx.beatIntensity * 0.15;
             }
-            state.lastBeatEnergy += (vol - state.lastBeatEnergy) * 0.15;
         }
 
         if (state.beatFlash > 0) state.beatFlash -= dt * 0.002;
