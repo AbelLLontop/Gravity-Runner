@@ -32,7 +32,13 @@
             height: 500px;
             box-shadow: 0 0 40px rgba(26, 58, 255, .15);
             border-radius: 4px;
-            overflow: hidden
+            overflow: hidden;
+            transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+            transform-origin: center center;
+        }
+
+        body.fs-mode {
+            background: #000;
         }
 
         canvas {
@@ -163,6 +169,71 @@
             background: #0c4;
             color: #000;
             box-shadow: 0 0 10px #0c4
+        }
+
+        /* ── Settings overlay: scrollable so tall content isn't clipped ── */
+        #ui-settings {
+            justify-content: flex-start !important;
+            align-items: center;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 16px 0 20px;
+        }
+
+        #ui-settings::-webkit-scrollbar { width: 6px; }
+        #ui-settings::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        #ui-settings::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+        /* ── Character preview cards ── */
+        .char-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 7px;
+            margin-top: 6px;
+        }
+
+        .char-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.45);
+            padding: 8px 4px 6px;
+            transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+            user-select: none;
+        }
+
+        .char-card:hover {
+            border-color: rgba(0,240,255,0.65);
+            box-shadow: 0 0 14px rgba(0,240,255,0.3);
+            background: rgba(0,20,30,0.6);
+        }
+
+        .char-card.active {
+            border-color: #0c4;
+            box-shadow: 0 0 16px rgba(0,204,68,0.5);
+        }
+
+        .char-cv {
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        .char-card-name {
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            margin-top: 5px;
+            color: rgba(255,255,255,0.75);
+        }
+
+        .char-tier-label {
+            font-size: 9px;
+            height: 13px;
+            margin-top: 2px;
+            color: rgba(200,220,255,0.45);
+            letter-spacing: 1px;
+            transition: color 0.4s;
         }
 
         .bd {
@@ -335,22 +406,61 @@
         </div>
 
         <div id="ui-settings" class="ov hd" style="z-index: 200;">
-            <div class="pnl" style="width: 450px;">
+            <div class="pnl" style="width: 520px; padding: 14px; margin-bottom: 0;">
                 <div class="pnl-t" style="color: #0c4;">CONFIGURACIÓN</div>
-                <div style="margin: 20px 0;">
-                    <div style="font-size: 14px; opacity: 0.7; margin-bottom: 15px; letter-spacing: 1px;">ELEGIR PERSONAJE:</div>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
-                        <button class="bp" id="btn-char-CUBE" onclick="setChar('CUBE')">CUBE</button>
-                        <button class="bp" id="btn-char-CAT" onclick="setChar('CAT')">GATO</button>
-                        <button class="bp" id="btn-char-FOX" onclick="setChar('FOX')">ZORRO</button>
-                        <button class="bp" id="btn-char-DRONE" onclick="setChar('DRONE')">DRON</button>
-                        <button class="bp" id="btn-char-GHOST" onclick="setChar('GHOST')">GHOST</button>
-                        <button class="bp" id="btn-char-UFO" onclick="setChar('UFO')">OVNI</button>
-                        <button class="bp" id="btn-char-NINJA" onclick="setChar('NINJA')">NINJA</button>
-                        <button class="bp" id="btn-char-SHARK" onclick="setChar('SHARK')">SHARK</button>
+                <div style="margin: 10px 0 0;">
+                    <div style="font-size: 13px; opacity: 0.7; margin-bottom: 8px; letter-spacing: 1px;">ELEGIR PERSONAJE:</div>
+                    <div class="char-grid">
+                        <div class="char-card" data-char="CUBE" onclick="setChar('CUBE')">
+                            <canvas class="char-cv"></canvas>
+                            <div class="char-card-name">CUBE</div>
+                            <div class="char-tier-label">BASE</div>
+                        </div>
+                        <div class="char-card" data-char="CAT" onclick="setChar('CAT')">
+                            <canvas class="char-cv"></canvas>
+                            <div class="char-card-name">GATO</div>
+                            <div class="char-tier-label">BASE</div>
+                        </div>
+                        <div class="char-card" data-char="FOX" onclick="setChar('FOX')">
+                            <canvas class="char-cv"></canvas>
+                            <div class="char-card-name">ZORRO</div>
+                            <div class="char-tier-label">BASE</div>
+                        </div>
+                        <div class="char-card" data-char="DRONE" onclick="setChar('DRONE')">
+                            <canvas class="char-cv"></canvas>
+                            <div class="char-card-name">DRON</div>
+                            <div class="char-tier-label">BASE</div>
+                        </div>
+                        <div class="char-card" data-char="GHOST" onclick="setChar('GHOST')">
+                            <canvas class="char-cv"></canvas>
+                            <div class="char-card-name">GHOST</div>
+                            <div class="char-tier-label">BASE</div>
+                        </div>
+                        <div class="char-card" data-char="UFO" onclick="setChar('UFO')">
+                            <canvas class="char-cv"></canvas>
+                            <div class="char-card-name">OVNI</div>
+                            <div class="char-tier-label">BASE</div>
+                        </div>
+                        <div class="char-card" data-char="NINJA" onclick="setChar('NINJA')">
+                            <canvas class="char-cv"></canvas>
+                            <div class="char-card-name">NINJA</div>
+                            <div class="char-tier-label">BASE</div>
+                        </div>
+                        <div class="char-card" data-char="SHARK" onclick="setChar('SHARK')">
+                            <canvas class="char-cv"></canvas>
+                            <div class="char-card-name">SHARK</div>
+                            <div class="char-tier-label">BASE</div>
+                        </div>
                     </div>
                 </div>
-                <button class="bl" style="width: 100%; margin-top: 10px;" onclick="hideSettings()">CERRAR</button>
+                <div style="margin: 12px 0 8px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; display:flex; align-items:center; justify-content:space-between;">
+                    <div>
+                        <div style="font-size:13px; letter-spacing:1px;">PANTALLA COMPLETA</div>
+                        <div style="font-size:10px; opacity:0.45; margin-top:3px; letter-spacing:1px;">El juego ocupa toda la ventana</div>
+                    </div>
+                    <button id="btn-fullscreen" class="bp" onclick="toggleFullscreenMode()" style="min-width:64px;">OFF</button>
+                </div>
+                <button class="bl" style="width: 100%; margin-top: 8px;" onclick="hideSettings()">CERRAR</button>
             </div>
         </div>
 
@@ -421,7 +531,7 @@
             <h1 style="color:#f33;margin-bottom:10px">TIEMPO TERMINADO</h1>
             <div class="st" id="go-sc">Puntuación: 0</div>
             <div style="display:flex;gap:20px;margin-top:40px">
-                <button class="bl" onclick="startPlay(curSong)">▶ REINTENTAR</button>
+                <button class="bl" onclick="retryGame()">▶ REINTENTAR</button>
                 <button class="bl" onclick="showMenu()">← MENÚ</button>
             </div>
         </div>

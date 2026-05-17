@@ -20,7 +20,8 @@ export function setupInput({ onPause }) {
     window.addEventListener('wheel', e => {
         e.preventDefault();
         state.volume = Math.max(0, Math.min(1, state.volume + (e.deltaY < 0 ? 0.05 : -0.05)));
-        if (Sfx.aud) Sfx.aud.volume = state.volume;
+        Sfx.setVolume(state.volume);
+        localStorage.setItem('gr_volume', state.volume);
         state.volDisplayT = 2000;
     }, { passive: false });
 }

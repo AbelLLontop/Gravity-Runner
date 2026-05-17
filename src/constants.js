@@ -14,10 +14,21 @@ export const LEVELS = (() => {
     return arr;
 })();
 
-// Streak tiers: 0=normal, 1=glow(10+), 2=aura(25+), 3=epic(50+)
+// Streak tiers: 0-3 visual FX, 4-7 character transformations
 export function getStreakTier(sc) {
-    if (sc >= 50) return 3;
-    if (sc >= 25) return 2;
-    if (sc >= 10) return 1;
+    if (sc >= 175) return 7;
+    if (sc >= 150) return 6;
+    if (sc >= 125) return 5;
+    if (sc >= 100) return 4;
+    if (sc >= 50)  return 3;
+    if (sc >= 25)  return 2;
+    if (sc >= 10)  return 1;
     return 0;
 }
+
+export const TIER_MSGS = {
+    4: { text: '✦ POWERED UP ✦',  sub: 'x100 RACHA' },
+    5: { text: '⚡ UNLEASHED ⚡',  sub: 'x125 RACHA' },
+    6: { text: '★  ASCENDED  ★',  sub: 'x150 RACHA' },
+    7: { text: '∞  GOD MODE  ∞',  sub: 'x175 RACHA' },
+};

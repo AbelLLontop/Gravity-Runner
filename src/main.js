@@ -1,4 +1,4 @@
-import { C, GS } from './constants.js';
+import { C, GS, getStreakTier, TIER_MSGS } from './constants.js';
 import { state } from './state.js';
 import { Sfx } from './audio.js';
 import { setupInput } from './input.js';
@@ -13,6 +13,10 @@ for (let i = 0; i < 50; i++) {
 
 // Load saved character
 state.pl.char = localStorage.getItem('gr_char') || 'FOX';
+
+// Load saved volume (default 0.2)
+const _savedVol = parseFloat(localStorage.getItem('gr_volume'));
+state.volume = isNaN(_savedVol) ? 0.2 : _savedVol;
 
 // Input
 setupInput({ onPause: togglePause });
@@ -50,6 +54,7 @@ function loop(now) {
 
         if (state.beatFlash > 0) state.beatFlash -= dt * 0.002;
         if (state.volDisplayT > 0) state.volDisplayT = Math.max(0, state.volDisplayT - dt);
+        if (state.tierMsg.t > 0) state.tierMsg.t = Math.max(0, state.tierMsg.t - dt);
 
         if (state.gs === GS.COUNTDOWN || state.gs === GS.PLAY) state.et += dt;
 
@@ -60,6 +65,19 @@ function loop(now) {
         } else if (state.gs === GS.PLAY) {
             updBlocks(dt); checkCol(); updPlayer(dt);
             if (state.scoreA.on) state.scoreA.t += dt;
+
+            // Tier-up detection
+            const curTier = getStreakTier(state.sc);
+            if (curTier > state.lastTier) {
+                if (TIER_MSGS[curTier]) {
+                    state.tierMsg = { ...TIER_MSGS[curTier], t: 3000, tier: curTier };
+                    state.beatFlash = 0.5;
+                }
+                state.lastTier = curTier;
+            } else if (curTier < state.lastTier) {
+                state.lastTier = curTier;
+            }
+
             const audioEnded = Sfx.aud && Sfx.aud.src && Sfx.aud.ended;
             if (audioEnded || state.blocks.length === 0) showGameOver();
         } else if (state.gs === GS.MENU) {

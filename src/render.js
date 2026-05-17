@@ -148,14 +148,14 @@ function rPlayer() {
     if (state.flash > 0) drawState = 'CRASH';
     else if (!pl.onSurface) drawState = 'AIR';
 
-    if (pl.char === 'CAT') drawCat(cx, C.PS, drawState);
-    else if (pl.char === 'FOX') drawFox(cx, C.PS, drawState);
-    else if (pl.char === 'DRONE') drawDrone(cx, C.PS, drawState);
-    else if (pl.char === 'GHOST') drawGhost(cx, C.PS, drawState);
-    else if (pl.char === 'UFO') drawUFO(cx, C.PS, drawState);
-    else if (pl.char === 'NINJA') drawNinja(cx, C.PS, drawState);
-    else if (pl.char === 'SHARK') drawShark(cx, C.PS, drawState);
-    else drawCube(cx, C.PS, drawState);
+    if (pl.char === 'CAT') drawCat(cx, C.PS, drawState, tier);
+    else if (pl.char === 'FOX') drawFox(cx, C.PS, drawState, tier);
+    else if (pl.char === 'DRONE') drawDrone(cx, C.PS, drawState, tier);
+    else if (pl.char === 'GHOST') drawGhost(cx, C.PS, drawState, tier);
+    else if (pl.char === 'UFO') drawUFO(cx, C.PS, drawState, tier);
+    else if (pl.char === 'NINJA') drawNinja(cx, C.PS, drawState, tier);
+    else if (pl.char === 'SHARK') drawShark(cx, C.PS, drawState, tier);
+    else drawCube(cx, C.PS, drawState, tier);
 
     cx.restore();
     cx.globalAlpha = 1;
@@ -178,6 +178,83 @@ function rPlayer() {
             cx.fill();
             cx.restore();
         }
+        cx.shadowBlur = 0;
+    }
+
+    // Tier 5: chromatic aberration echo — two ghost copies offset in R and B
+    if (tier >= 5) {
+        cx.save();
+        cx.translate(px - 6, py);
+        cx.scale(pl.sx, pl.sy);
+        if (pl.grav === 'UP') cx.scale(1, -1);
+        cx.globalAlpha = 0.28;
+        cx.globalCompositeOperation = 'screen';
+        cx.shadowColor = 'rgba(255,0,0,0.8)';
+        cx.shadowBlur = 10;
+        cx.fillStyle = 'rgba(255,30,0,0.6)';
+        cx.fillRect(-C.PS / 2, -C.PS / 2, C.PS, C.PS);
+        cx.restore();
+
+        cx.save();
+        cx.translate(px + 6, py);
+        cx.scale(pl.sx, pl.sy);
+        if (pl.grav === 'UP') cx.scale(1, -1);
+        cx.globalAlpha = 0.28;
+        cx.globalCompositeOperation = 'screen';
+        cx.shadowColor = 'rgba(0,60,255,0.8)';
+        cx.shadowBlur = 10;
+        cx.fillStyle = 'rgba(0,60,255,0.6)';
+        cx.fillRect(-C.PS / 2, -C.PS / 2, C.PS, C.PS);
+        cx.restore();
+        cx.globalCompositeOperation = 'source-over';
+        cx.globalAlpha = 1;
+    }
+
+    // Tier 6: void rift — jagged dark energy crack behind player
+    if (tier >= 6) {
+        cx.save();
+        cx.globalAlpha = 0.7;
+        const riftLen = 80 + Math.sin(state.et * 0.008) * 20;
+        cx.strokeStyle = `hsla(${(state.curHue + 180) % 360}, 100%, 40%, 0.9)`;
+        cx.lineWidth = 3;
+        cx.shadowColor = `hsla(${(state.curHue + 180) % 360}, 100%, 70%, 1)`;
+        cx.shadowBlur = 12;
+        cx.beginPath();
+        cx.moveTo(px, py);
+        let rx = px + 15;
+        for (let s = 0; s < 8; s++) {
+            rx += riftLen / 8;
+            const ry = py + (Math.random() - 0.5) * 22;
+            cx.lineTo(rx, ry);
+        }
+        cx.stroke();
+        cx.restore();
+        cx.shadowBlur = 0;
+    }
+
+    // Tier 7: lightning cage + screen edge glow
+    if (tier >= 7) {
+        // Cage arcs
+        for (let i = 0; i < 3; i++) {
+            const ang = state.et * 0.007 + i * (Math.PI * 2 / 3);
+            const r = C.PS * 1.5;
+            cx.save();
+            cx.strokeStyle = `hsla(${(state.curHue + i * 60) % 360}, 100%, 90%, 0.8)`;
+            cx.lineWidth = 1.5;
+            cx.shadowColor = '#fff';
+            cx.shadowBlur = 14;
+            cx.beginPath();
+            cx.arc(px, py, r, ang, ang + Math.PI * 0.9);
+            cx.stroke();
+            cx.restore();
+        }
+        // Screen edge pulse
+        const edgeA = 0.08 + Math.sin(state.et * 0.01) * 0.05;
+        const eg = cx.createRadialGradient(C.W / 2, C.H / 2, C.H * 0.3, C.W / 2, C.H / 2, C.H * 0.9);
+        eg.addColorStop(0, 'rgba(0,0,0,0)');
+        eg.addColorStop(1, `hsla(${state.curHue}, 100%, 70%, ${edgeA})`);
+        cx.fillStyle = eg;
+        cx.fillRect(0, 0, C.W, C.H);
         cx.shadowBlur = 0;
     }
 }
@@ -314,6 +391,51 @@ function rCountdown() {
     cx.restore();
 }
 
+function rTierBanner() {
+    const msg = state.tierMsg;
+    if (!msg || msg.t <= 0) return;
+    const dur = 3000;
+    const age = dur - msg.t;
+    let scale, alpha;
+    if (age < 200) {
+        scale = 0.3 + (age / 200) * 0.9;
+        alpha = age / 200;
+    } else if (age < 2600) {
+        scale = 1.0 + Math.sin((age - 200) / 2400 * Math.PI) * 0.06;
+        alpha = 1;
+    } else {
+        const fade = (age - 2600) / 400;
+        scale = 1.0 - fade * 0.1;
+        alpha = 1 - fade;
+    }
+    if (alpha <= 0) return;
+
+    const hues = [0, 0, 0, 0, 180, 55, 270, 60];
+    const h = hues[msg.tier] || state.curHue;
+
+    cx.save();
+    cx.globalAlpha = alpha;
+    cx.translate(C.W / 2, C.H * 0.3);
+    cx.scale(scale, scale);
+    cx.textAlign = 'center';
+    cx.textBaseline = 'middle';
+
+    // glow backdrop
+    cx.shadowColor = `hsla(${h}, 100%, 70%, 1)`;
+    cx.shadowBlur = 30;
+    cx.fillStyle = `hsla(${h}, 100%, 75%, 1)`;
+    cx.font = "bold 32px 'Space Mono',monospace";
+    cx.fillText(msg.text, 0, 0);
+
+    cx.shadowBlur = 12;
+    cx.fillStyle = `rgba(255,255,255,0.85)`;
+    cx.font = "bold 14px 'Space Mono',monospace";
+    cx.fillText(msg.sub, 0, 30);
+
+    cx.restore();
+    cx.shadowBlur = 0;
+}
+
 export function render() {
     cx.clearRect(0, 0, C.W, C.H);
     rBg();
@@ -333,5 +455,6 @@ export function render() {
         cx.fillStyle = g; cx.fillRect(0, 0, C.W, C.H);
     }
     rScAnim(); rCountdown();
+    rTierBanner();
     rVolToast();
 }

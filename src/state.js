@@ -45,6 +45,8 @@ export const state = {
     beatCooldown: 0,
     beatFlash: 0,
     dynamicGap: C.GAP,
-    volume: 1.0,
+    volume: 0.2,
     volDisplayT: 0,
+    lastTier: 0,
+    tierMsg: { text: '', sub: '', t: 0, tier: 0 },
 };
