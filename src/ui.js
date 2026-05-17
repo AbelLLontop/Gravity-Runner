@@ -35,13 +35,13 @@ export function showMenu() {
         const info = document.createElement('div');
         info.style.textAlign = 'left';
         info.innerHTML = `<div style="font-weight:bold">${s.name}</div>
-                          <div style="font-size:11px;opacity:.6">${s.bpm} BPM ${s.hasMusic ? '• ♫' : ''}</div>`;
+                          <div style="font-size:11px;opacity:.6">${s.hasMusic ? '♫ Con Música' : 'Sin Música'}</div>`;
 
         const score = document.createElement('div');
         score.className = 'si-score';
-        const acc = s.bestAcc || 0;
-        score.style.color = acc > 0 ? '#0c4' : 'rgba(255,255,255,.2)';
-        score.textContent = acc + '%';
+        const bs = s.bestScore || 0;
+        score.style.color = bs > 0 ? '#0cf' : 'rgba(255,255,255,.2)';
+        score.innerHTML = `${bs}<div style="font-size:10px;color:#ffcc00">PTS MAX</div>`;
 
         const actions = document.createElement('div');
         actions.style.display = 'flex';
@@ -93,12 +93,11 @@ export function startPlay(song) {
     state.countT = 3000;
 
     hide('ui-menu'); hide('ui-go'); show('ui-hud');
-    document.getElementById('h-bpm').textContent = '♫ ' + song.bpm + ' BPM';
 
     const mFile = MusicCache[song.id];
     if (mFile) {
         Sfx.loadMusic(mFile);
-        const profilePromise = Sfx.analyzeBeatProfile(mFile, song.bpm);
+        const profilePromise = Sfx.analyzeBeatProfile(mFile);
         Sfx.aud.onloadedmetadata = () => {
             const dur = Sfx.aud.duration || 60;
             genObstacles(song, dur);
@@ -126,9 +125,18 @@ export function showGameOver() {
     state.gs = GS.OVER;
     Sfx.stopMusic();
     hide('ui-hud'); show('ui-go');
-    const acc = state.totalBl > 0 ? Math.round((state.bestSc / state.totalBl) * 100) : 0;
-    if (state.curSong) SM.updateBest(state.curSong.id, acc);
-    document.getElementById('go-sc').textContent = 'Porcentaje: ' + acc + '% | Bloques: ' + state.totalBl;
+    
+    const base = state.totalScore;
+    const bonus = state.coinsCollected;
+    const streak = state.bestSc;
+    const finalScore = base + bonus + streak;
+    
+    if (state.curSong) SM.updateBest(state.curSong.id, finalScore);
+    
+    document.getElementById('go-base').textContent = 'Puntaje Base: ' + base;
+    document.getElementById('go-bonus').textContent = 'Bonus Obtenido: ' + bonus;
+    document.getElementById('go-streak').textContent = 'Mejor Racha: ' + streak;
+    document.getElementById('go-sc').textContent = 'TOTAL: ' + finalScore;
 }
 
 export function togglePause() {
@@ -172,34 +180,16 @@ export function showHelp() { show('ui-help'); }
 export function hideHelp() { hide('ui-help'); }
 export function hideSettings() { hide('ui-settings'); }
 
-export async function detectBPMFromInput(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const status = document.getElementById('bpm-status');
-    status.textContent = 'Analizando...';
-    try {
-        const bpm = await Sfx.analyzeBPM(file);
-        document.getElementById('sbpm').value = bpm;
-        status.textContent = 'OK!';
-    } catch (e) {
-        status.textContent = 'Error';
-    }
-    setTimeout(() => { status.textContent = ''; }, 2000);
-}
 
-export function adjBPM(m) {
-    const el = document.getElementById('sbpm');
-    const v = Math.round(parseInt(el.value) * m);
-    if (v >= 40 && v <= 600) el.value = v;
-}
 
 function resetGame() {
-    state.blocks = []; state.parts = []; state.pl.trail = [];
-    state.et = 0; state.sc = 0; state.bestSc = 0; state.totalBl = 0; state.totalSuccess = 0;
+    state.blocks = []; state.parts = []; state.pl.trail = []; state.coins = [];
+    state.et = 0; state.sc = 0; state.bestSc = 0; state.totalBl = 0; state.totalSuccess = 0; state.coinsCollected = 0; state.totalScore = 0;
     state.scoreA.on = false; state.flash = 0; state.pl.vy = 0;
     state.energyMult = 1.0; state.smoothEnergy = 0;
     state.lastBeatEnergy = 0; state.beatCooldown = 0; state.beatFlash = 0;
     state.dynamicGap = C.GAP;
+    state.v_target = 320;
     state.lastTier = 0; state.tierMsg = { text: '', sub: '', t: 0, tier: 0 };
 }
 
@@ -249,7 +239,5 @@ window.hideHelp = hideHelp;
 window.showSettings = showSettings;
 window.hideSettings = hideSettings;
 window.setChar = setChar;
-window.detectBPMFromInput = detectBPMFromInput;
-window.adjBPM = adjBPM;
 window.toggleFullscreenMode = toggleFullscreenMode;
 window.retryGame = retryGame;

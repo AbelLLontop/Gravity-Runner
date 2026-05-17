@@ -12,7 +12,9 @@ for (let i = 0; i < 50; i++) {
 }
 
 // Load saved character
-state.pl.char = localStorage.getItem('gr_char') || 'FOX';
+let savedChar = localStorage.getItem('gr_char') || 'CAT';
+if (savedChar === 'FOX') savedChar = 'CAT';
+state.pl.char = savedChar;
 
 // Load saved volume (default 0.2)
 const _savedVol = parseFloat(localStorage.getItem('gr_volume'));
@@ -30,6 +32,8 @@ function loop(now) {
     if (!state.paused) {
         if (Sfx.ana) {
             const vol = Sfx.getVol();
+            const rawRMS = Sfx.getRMS();
+            state.smoothedRMS = state.smoothedRMS * 0.8 + rawRMS * 0.2;
 
             const targetHue = 200 + (vol / 120) * 160;
             state.curHue += (targetHue - state.curHue) * 0.1;
@@ -65,6 +69,17 @@ function loop(now) {
         } else if (state.gs === GS.PLAY) {
             updBlocks(dt); checkCol(); updPlayer(dt);
             if (state.scoreA.on) state.scoreA.t += dt;
+
+            // Fade out music in the last 5 seconds
+            if (Sfx.aud && Sfx.aud.src && !Sfx.aud.paused && isFinite(Sfx.aud.duration)) {
+                const timeLeft = Sfx.aud.duration - Sfx.aud.currentTime;
+                if (timeLeft <= 5 && timeLeft > 0) {
+                    const factor = Math.max(0, timeLeft / 5);
+                    Sfx.setVolume(state.volume * factor);
+                } else if (timeLeft > 5) {
+                    Sfx.setVolume(state.volume);
+                }
+            }
 
             // Tier-up detection
             const curTier = getStreakTier(state.sc);

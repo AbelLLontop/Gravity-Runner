@@ -14,11 +14,11 @@ export const SM = {
         const a = this.all().filter(s => s.id !== id);
         localStorage.setItem('bg_songs', JSON.stringify(a));
     },
-    updateBest(id, acc) {
+    updateBest(id, finalScore) {
         const a = this.all();
         const s = a.find(x => x.id === id);
         if (s) {
-            s.bestAcc = Math.max(s.bestAcc || 0, acc);
+            s.bestScore = Math.max(s.bestScore || 0, finalScore);
             localStorage.setItem('bg_songs', JSON.stringify(a));
         }
     }

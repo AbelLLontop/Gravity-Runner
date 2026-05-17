@@ -2,13 +2,12 @@ import { C, GS, LEVELS, STEP_Y } from './constants.js';
 import { state } from './state.js';
 
 export function getSpeed() {
-    const bpm = (state.curSong && state.curSong.bpm) ? state.curSong.bpm : 120;
-    const bw = C.PS * 5;
-    return (bw * bpm) / 60;
+    return 320;
 }
 
 export function genObstacles(song, duration) {
     state.blocks = [];
+    state.coins = [];
     const bw = C.PS * 5;
     let curX = 0;
     let curGY = LEVELS[3];
@@ -28,8 +27,9 @@ export function genObstacles(song, duration) {
         curX += bw;
     }
 
-    let actionDuration = Math.max(0, duration - 10);
-    let numActionBlocks = Math.ceil((actionDuration * song.bpm) / 60);
+    const countdownTime = (countdownBlocks * bw) / spd;
+    let actionDuration = Math.max(0, duration - 5 - countdownTime);
+    let numActionBlocks = Math.ceil(actionDuration / 0.5);
 
     const profile = song.beatProfile;
     const hasProfile = Array.isArray(profile) && profile.length > 0;
@@ -79,18 +79,17 @@ export function genObstacles(song, duration) {
         else if (curGY > targetGY) curGY = Math.max(targetGY, curGY - stepAmount);
 
         addBlock(curX, bw, curGY, false, C.GAP);
+        
+        if (Math.random() < 0.6) {
+            const isTop = Math.random() > 0.5;
+            const coinY = isTop ? curGY + C.PS / 2 : curGY + C.GAP - C.PS / 2;
+            state.coins.push({ x: curX + bw / 2, y: coinY, collected: false });
+        }
+
         curX += bw;
         patternCount--;
     }
 
-    const outroBlocks = Math.ceil((10 * song.bpm) / 60);
-    const midGY = LEVELS[3];
-    for (let i = 0; i < outroBlocks; i++) {
-        if (curGY < midGY) curGY = Math.min(midGY, curGY + stepAmount);
-        else if (curGY > midGY) curGY = Math.max(midGY, curGY - stepAmount);
-        addBlock(curX, bw, curGY, true);
-        curX += bw;
-    }
-
-    addBlock(curX, C.W * 1.5, curGY, true);
+    const outroWidth = 5 * spd;
+    addBlock(curX, outroWidth, curGY, true);
 }

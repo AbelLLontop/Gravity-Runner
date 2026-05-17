@@ -12,16 +12,20 @@ export function setupInput({ onPause }) {
         keys[e.key] = true;
         Sfx.init();
         if (e.key === 'p' || e.key === 'P' || e.key === ' ') onPause();
+        
+        if (e.key === '+' || e.key === '=') {
+            state.volume = Math.max(0, Math.min(1, state.volume + 0.05));
+            Sfx.setVolume(state.volume);
+            localStorage.setItem('gr_volume', state.volume);
+            state.volDisplayT = 2000;
+        }
+        if (e.key === '-' || e.key === '_') {
+            state.volume = Math.max(0, Math.min(1, state.volume - 0.05));
+            Sfx.setVolume(state.volume);
+            localStorage.setItem('gr_volume', state.volume);
+            state.volDisplayT = 2000;
+        }
     });
     window.addEventListener('keyup', e => { keys[e.key] = false; });
     window.addEventListener('mousedown', () => Sfx.init());
-
-    // Scroll wheel = volume control (no interference with arrow keys)
-    window.addEventListener('wheel', e => {
-        e.preventDefault();
-        state.volume = Math.max(0, Math.min(1, state.volume + (e.deltaY < 0 ? 0.05 : -0.05)));
-        Sfx.setVolume(state.volume);
-        localStorage.setItem('gr_volume', state.volume);
-        state.volDisplayT = 2000;
-    }, { passive: false });
 }

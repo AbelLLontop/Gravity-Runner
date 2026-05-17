@@ -2,7 +2,7 @@ import { C, GS, getStreakTier } from './constants.js';
 import { state } from './state.js';
 import { Sfx } from './audio.js';
 import { mkDust } from './physics.js';
-import { drawCube, drawCat, drawFox, drawDrone, drawGhost, drawUFO, drawNinja, drawShark } from './characters.js';
+import { drawCube, drawCat, drawBee, drawDrone, drawGhost, drawUFO, drawNinja, drawShark, drawCoin } from './characters.js';
 
 const cv = document.getElementById('cv');
 const cx = cv.getContext('2d');
@@ -46,11 +46,11 @@ function rBlocks() {
                 growth = 1 - (b.x - (C.W - 150)) / 150;
                 growth = Math.max(0, Math.min(1, Math.pow(growth, 0.4)));
             }
-        } else if (b.x + b.w < 300) {
-            alpha = (b.x + b.w) / 300;
-            if (b.x + b.w < 120) {
-                growth = Math.max(0, (b.x + b.w) / 120);
-                growth = Math.pow(growth, 0.6);
+        } else if (b.x + b.w < 250) {
+            alpha = (b.x + b.w) / 250;
+            if (b.x + b.w < 180) {
+                growth = Math.max(0, (b.x + b.w) / 180);
+                growth = Math.pow(growth, 0.4);
             }
         }
         alpha = Math.max(0, Math.min(1, alpha));
@@ -96,6 +96,17 @@ function rBlocks() {
         cx.globalAlpha = 1;
     }
     cx.shadowBlur = 0;
+}
+
+function rCoins() {
+    const { pl } = state;
+    for (const c of state.coins) {
+        if (c.collected || c.x < -50 || c.x > C.W + 50) continue;
+        cx.save();
+        cx.translate(c.x, c.y);
+        drawCoin(cx, 26, pl.char, state.et);
+        cx.restore();
+    }
 }
 
 function rPlayer() {
@@ -149,7 +160,7 @@ function rPlayer() {
     else if (!pl.onSurface) drawState = 'AIR';
 
     if (pl.char === 'CAT') drawCat(cx, C.PS, drawState, tier);
-    else if (pl.char === 'FOX') drawFox(cx, C.PS, drawState, tier);
+    else if (pl.char === 'BEE') drawBee(cx, C.PS, drawState, tier);
     else if (pl.char === 'DRONE') drawDrone(cx, C.PS, drawState, tier);
     else if (pl.char === 'GHOST') drawGhost(cx, C.PS, drawState, tier);
     else if (pl.char === 'UFO') drawUFO(cx, C.PS, drawState, tier);
@@ -295,9 +306,20 @@ function rVolToast() {
 
 function rParts() {
     for (const p of state.parts) {
-        cx.globalAlpha = p.l;
-        cx.fillStyle = p.s > 2 ? '#fff' : '#00f0ff';
-        cx.beginPath(); cx.arc(p.x, p.y, p.s, 0, Math.PI * 2); cx.fill();
+        cx.globalAlpha = Math.max(0, p.l);
+        if (p.type === 'coin') {
+            cx.fillStyle = `hsla(${state.curHue}, 100%, 70%, 1)`;
+            cx.shadowColor = cx.fillStyle; cx.shadowBlur = 10;
+            cx.beginPath(); cx.arc(p.x, p.y, p.s, 0, Math.PI * 2); cx.fill();
+            cx.shadowBlur = 0;
+        } else if (p.type === 'ring') {
+            cx.strokeStyle = `hsla(${state.curHue}, 100%, 70%, ${p.l})`;
+            cx.lineWidth = 3;
+            cx.beginPath(); cx.arc(p.x, p.y, (1 - p.l) * 40, 0, Math.PI * 2); cx.stroke();
+        } else {
+            cx.fillStyle = p.s > 2 ? '#fff' : '#00f0ff';
+            cx.beginPath(); cx.arc(p.x, p.y, p.s, 0, Math.PI * 2); cx.fill();
+        }
     }
     cx.globalAlpha = 1;
 }
@@ -441,8 +463,9 @@ export function render() {
     rBg();
     rVisualizer();
     rGuide();
-    if (state.gs === GS.MENU) { cx.globalAlpha = .2; rBlocks(); cx.globalAlpha = 1; return; }
+    if (state.gs === GS.MENU) { cx.globalAlpha = .2; rBlocks(); rCoins(); cx.globalAlpha = 1; return; }
     rBlocks();
+    rCoins();
     rDarkness();
     rParts(); rPlayer();
     if (state.beatFlash > 0) { cx.fillStyle = `hsla(${state.curHue}, 80%, 80%, ${state.beatFlash * 0.6})`; cx.fillRect(0, 0, C.W, C.H); }

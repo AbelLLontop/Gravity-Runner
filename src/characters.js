@@ -16,24 +16,6 @@ export function drawCat(cx, s, drawState, tier = 0) {
     if (tier >= 4) { drawVoidCat(cx, s, drawState); return; }
     const t = state.et * 0.01;
     let main = `hsla(${state.curHue}, 100%, 85%, 1)`, sec = `hsla(${state.curHue}, 100%, 60%, 1)`;
-    if (drawState === 'CRASH') { main = '#ff4444'; sec = '#880000'; cx.translate(Math.sin(state.et * 0.1) * 3, Math.cos(state.et * 0.1) * 3); }
-    const bob = drawState === 'RUN' ? Math.sin(t * 10) * 1.5 : 0; cx.translate(0, bob);
-    cx.fillStyle = main;
-    cx.fillRect(-s * 0.4, -s * 0.2, s * 0.8, s * 0.5); cx.fillRect(s * 0.1, -s * 0.3, s * 0.3, s * 0.2); cx.fillRect(s * 0.2, -s * 0.5, s * 0.4, s * 0.4);
-    cx.fillStyle = sec; cx.fillRect(s * 0.2, -s * 0.6, s * 0.1, s * 0.15); cx.fillRect(s * 0.5, -s * 0.6, s * 0.1, s * 0.15);
-    const tailY = Math.sin(t * 8) * (drawState === 'RUN' ? 6 : 1.5);
-    cx.fillRect(-s * 0.5, -s * 0.1 + tailY * 0.5, s * 0.2, s * 0.2); cx.fillRect(-s * 0.6, -s * 0.2 + tailY, s * 0.2, s * 0.2);
-    cx.fillStyle = sec;
-    if (drawState === 'RUN') { const l1 = Math.sin(t*12)*4, l2 = Math.cos(t*12)*4; cx.fillRect(s*.2, s*.3+l1, s*.15, s*.2); cx.fillRect(-s*.3, s*.3+l2, s*.15, s*.2); }
-    else { const ly = drawState === 'AIR' ? s*.1 : s*.25; cx.fillRect(s*.2, ly, s*.15, s*.15); cx.fillRect(-s*.3, ly, s*.15, s*.15); }
-    if (drawState === 'CRASH') { cx.strokeStyle='#fff';cx.lineWidth=2;cx.beginPath();cx.moveTo(s*.35,-s*.4);cx.lineTo(s*.45,-s*.3);cx.stroke();cx.beginPath();cx.moveTo(s*.45,-s*.4);cx.lineTo(s*.35,-s*.3);cx.stroke(); }
-    else { cx.fillStyle='#000';cx.fillRect(s*.4,-s*.4,s*.08,s*.08);cx.fillStyle='#fff';cx.fillRect(s*.4,-s*.4,s*.03,s*.03); }
-}
-
-export function drawFox(cx, s, drawState, tier = 0) {
-    if (tier >= 4) { drawKitsune(cx, s, drawState); return; }
-    const t = state.et * 0.01;
-    let main = `hsla(${state.curHue}, 100%, 85%, 1)`, sec = `hsla(${state.curHue}, 100%, 60%, 1)`;
     if (drawState === 'CRASH') { main='#ff4444';sec='#880000';cx.translate(Math.sin(state.et*.1)*3,Math.cos(state.et*.1)*3); }
     const bob = drawState==='RUN'?Math.sin(t*12)*2:(drawState==='AIR'?Math.sin(t*4):0); cx.translate(0,bob);
     cx.fillStyle=main;cx.fillRect(-s*.45,-s*.15,s*.9,s*.4);cx.fillRect(s*.2,-s*.25,s*.3,s*.2);cx.fillRect(s*.3,-s*.45,s*.4,s*.35);cx.fillRect(s*.6,-s*.3,s*.2,s*.15);
@@ -45,6 +27,39 @@ export function drawFox(cx, s, drawState, tier = 0) {
     if (drawState==='CRASH'){cx.strokeStyle='#fff';cx.lineWidth=2;cx.beginPath();cx.moveTo(s*.4,-s*.35);cx.lineTo(s*.5,-s*.25);cx.stroke();cx.beginPath();cx.moveTo(s*.5,-s*.35);cx.lineTo(s*.4,-s*.25);cx.stroke();}
     else{cx.fillStyle='#000';cx.fillRect(s*.45,-s*.35,s*.08,s*.08);cx.fillStyle='#fff';cx.fillRect(s*.45,-s*.35,s*.03,s*.03);}
     cx.globalAlpha=0.6;cx.fillStyle=sec;cx.fillRect(s*.2,-s*.2,-s*.6,s*.08);cx.globalAlpha=1;
+}
+
+export function drawBee(cx, s, drawState, tier = 0) {
+    if (tier >= 4) { drawQueenBee(cx, s, drawState); return; }
+    const t = state.et * 0.01;
+    let main = `hsla(${state.curHue}, 100%, 60%, 1)`, dark = '#111';
+    if (drawState === 'CRASH') { main = '#ff4444'; dark = '#500'; cx.translate(Math.sin(t*10)*3, Math.cos(t*10)*3); }
+    const bob = drawState === 'RUN' ? Math.sin(t*15)*3 : (drawState === 'AIR' ? Math.sin(t*8)*2 : 0);
+    cx.translate(0, bob);
+    
+    // Wings
+    cx.fillStyle = `hsla(${state.curHue}, 100%, 85%, 0.6)`;
+    const flap = drawState === 'CRASH' ? 0 : Math.sin(t*40)*s*0.3;
+    cx.beginPath(); cx.ellipse(-s*0.1, -s*0.2 + flap, s*0.3, s*0.15, -Math.PI/6, 0, Math.PI*2); cx.fill();
+    cx.beginPath(); cx.ellipse(s*0.1, -s*0.2 - flap, s*0.3, s*0.15, Math.PI/6, 0, Math.PI*2); cx.fill();
+
+    // Body
+    cx.fillStyle = main;
+    cx.beginPath(); cx.ellipse(0, 0, s*0.45, s*0.3, 0, 0, Math.PI*2); cx.fill();
+    
+    // Stripes
+    cx.fillStyle = dark;
+    cx.fillRect(-s*0.2, -s*0.28, s*0.15, s*0.56);
+    cx.fillRect(s*0.05, -s*0.28, s*0.15, s*0.56);
+    
+    // Stinger
+    cx.beginPath(); cx.moveTo(-s*0.4, -s*0.05); cx.lineTo(-s*0.6, 0); cx.lineTo(-s*0.4, s*0.05); cx.fill();
+    
+    // Eye
+    cx.fillStyle = '#fff';
+    cx.beginPath(); cx.arc(s*0.25, -s*0.1, s*0.08, 0, Math.PI*2); cx.fill();
+    cx.fillStyle = '#000';
+    cx.beginPath(); cx.arc(s*0.28, -s*0.1, s*0.03, 0, Math.PI*2); cx.fill();
 }
 
 export function drawDrone(cx, s, drawState, tier = 0) {
@@ -147,74 +162,13 @@ function drawHyperCube(cx, s, drawState) {
 
 function drawVoidCat(cx, s, drawState) {
     const t = state.et * 0.01;
-    const fh = 15 + Math.sin(t * 5) * 15; // fire hue
-    if (drawState === 'CRASH') cx.translate(Math.sin(t * 10) * 3, Math.cos(t * 10) * 3);
-
-    // Fire aura tongues
-    for (let i = 0; i < 6; i++) {
-        const fa = (i / 6) * Math.PI * 2 + t * 2;
-        const flen = s * 0.35 + Math.sin(t * 6 + i) * s * 0.15;
-        cx.fillStyle = `hsla(${fh + i * 8}, 100%, 55%, 0.35)`;
-        cx.beginPath();
-        cx.ellipse(Math.cos(fa) * s * 0.35, Math.sin(fa) * s * 0.35 - flen * 0.3, s * 0.08, flen * 0.5, fa, 0, Math.PI * 2);
-        cx.fill();
-    }
-
-    // Dark body
-    cx.fillStyle = '#0d0008';
-    cx.fillRect(-s * 0.4, -s * 0.2, s * 0.8, s * 0.5);
-    cx.fillRect(s * 0.1, -s * 0.3, s * 0.3, s * 0.2);
-    cx.fillRect(s * 0.2, -s * 0.5, s * 0.4, s * 0.4);
-
-    // Flame outline
-    cx.strokeStyle = `hsla(${fh}, 100%, 60%, 0.85)`;
-    cx.lineWidth = 1.5;
-    cx.shadowColor = `hsla(${fh}, 100%, 60%, 1)`;
-    cx.shadowBlur = 10;
-    cx.strokeRect(-s * 0.4, -s * 0.2, s * 0.8, s * 0.5);
-    cx.shadowBlur = 0;
-
-    // Fire ears
-    cx.fillStyle = `hsla(${fh + 20}, 100%, 65%, 0.9)`;
-    cx.fillRect(s * 0.22, -s * 0.62, s * 0.1, s * 0.16);
-    cx.fillRect(s * 0.5, -s * 0.62, s * 0.1, s * 0.16);
-
-    // Flame tail (3 tongues)
-    for (let i = 0; i < 3; i++) {
-        const tx = -s * 0.5 - i * s * 0.12;
-        const ty = -s * 0.1 + Math.sin(t * 6 + i * 1.5) * s * 0.25;
-        cx.fillStyle = `hsla(${fh + i * 20}, 100%, ${60 + i * 8}%, ${0.85 - i * 0.2})`;
-        cx.fillRect(tx, ty, s * 0.14, s * 0.13);
-    }
-
-    // Burning eyes
-    cx.fillStyle = `hsla(${fh + 10}, 100%, 75%, 1)`;
-    cx.shadowColor = `hsla(${fh}, 100%, 70%, 1)`;
-    cx.shadowBlur = 14;
-    cx.fillRect(s * 0.38, -s * 0.42, s * 0.1, s * 0.09);
-    cx.shadowBlur = 0;
-
-    // Legs
-    cx.fillStyle = '#1a000d';
-    if (drawState === 'RUN') {
-        const l1 = Math.sin(t * 12) * 4, l2 = Math.cos(t * 12) * 4;
-        cx.fillRect(s * 0.2, s * 0.3 + l1, s * 0.14, s * 0.2);
-        cx.fillRect(-s * 0.3, s * 0.3 + l2, s * 0.14, s * 0.2);
-    } else {
-        cx.fillRect(s * 0.2, s * 0.25, s * 0.14, s * 0.14);
-        cx.fillRect(-s * 0.3, s * 0.25, s * 0.14, s * 0.14);
-    }
-}
-
-function drawKitsune(cx, s, drawState) {
-    const t = state.et * 0.01;
     const h = state.curHue;
     const gold = '#ffdd66';
     if (drawState === 'CRASH') { cx.translate(Math.sin(t * 10) * 3, Math.cos(t * 10) * 3); }
     const bob = drawState === 'RUN' ? Math.sin(t * 12) * 2 : 0;
     cx.translate(0, bob);
 
-    // Three energy tails fanning behind
+    // Three energy tails
     for (let i = 0; i < 3; i++) {
         const spreadAngle = (i - 1) * 0.4;
         const tailWave = Math.sin(t * 6 + i * 1.2) * 8;
@@ -230,20 +184,20 @@ function drawKitsune(cx, s, drawState) {
     }
     cx.shadowBlur = 0;
 
-    // Body (golden tint)
+    // Body
     cx.fillStyle = gold;
     cx.fillRect(-s * 0.45, -s * 0.15, s * 0.9, s * 0.4);
     cx.fillRect(s * 0.2, -s * 0.25, s * 0.3, s * 0.2);
     cx.fillRect(s * 0.3, -s * 0.45, s * 0.4, s * 0.35);
 
-    // Ears (golden pointed)
+    // Ears
     cx.fillStyle = `hsla(${h}, 100%, 70%, 0.9)`;
     cx.beginPath();
     cx.moveTo(s * 0.3, -s * 0.45); cx.lineTo(s * 0.35, -s * 0.7); cx.lineTo(s * 0.45, -s * 0.45);
     cx.moveTo(s * 0.5, -s * 0.45); cx.lineTo(s * 0.55, -s * 0.7); cx.lineTo(s * 0.65, -s * 0.45);
     cx.fill();
 
-    // Third eye (center forehead)
+    // Third eye
     const eyePulse = (Math.sin(t * 4) + 1) * 0.5;
     cx.fillStyle = `hsla(${(h + 60) % 360}, 100%, 80%, ${0.7 + eyePulse * 0.3})`;
     cx.shadowColor = `hsla(${(h + 60) % 360}, 100%, 80%, 1)`;
@@ -255,7 +209,7 @@ function drawKitsune(cx, s, drawState) {
     cx.fillStyle = '#000'; cx.fillRect(s * 0.45, -s * 0.35, s * 0.08, s * 0.08);
     cx.fillStyle = gold; cx.fillRect(s * 0.45, -s * 0.35, s * 0.03, s * 0.03);
 
-    // Floating kitsunebi orb
+    // Orb
     const orbAngle = t * 3;
     const ox = Math.cos(orbAngle) * s * 0.7, oy = Math.sin(orbAngle) * s * 0.5 - s * 0.1;
     cx.fillStyle = `hsla(${(h + 90) % 360}, 100%, 75%, 0.9)`;
@@ -274,6 +228,37 @@ function drawKitsune(cx, s, drawState) {
         cx.fillRect(s * 0.3, s * 0.1, s * 0.12, s * 0.15);
         cx.fillRect(-s * 0.4, s * 0.1, s * 0.12, s * 0.15);
     }
+}
+
+function drawQueenBee(cx, s, drawState) {
+    const t = state.et * 0.01;
+    if (drawState === 'CRASH') { cx.translate(Math.sin(t*10)*4, 0); }
+    
+    cx.fillStyle = `hsla(${state.curHue}, 100%, 50%, 1)`;
+    cx.shadowColor = `hsla(${state.curHue}, 100%, 50%, 1)`;
+    cx.shadowBlur = 15;
+    cx.beginPath(); cx.ellipse(0, 0, s*0.6, s*0.4, 0, 0, Math.PI*2); cx.fill();
+    
+    cx.fillStyle = '#050505';
+    cx.shadowBlur = 0;
+    cx.fillRect(-s*0.25, -s*0.38, s*0.2, s*0.76);
+    cx.fillRect(s*0.05, -s*0.38, s*0.2, s*0.76);
+    
+    // Glowing Wings
+    cx.fillStyle = `hsla(${(state.curHue+40)%360}, 100%, 70%, 0.8)`;
+    const flap = Math.sin(t*50)*s*0.4;
+    cx.beginPath(); cx.ellipse(-s*0.2, -s*0.3 + flap, s*0.4, s*0.2, -Math.PI/6, 0, Math.PI*2); cx.fill();
+    cx.beginPath(); cx.ellipse(s*0.2, -s*0.3 - flap, s*0.4, s*0.2, Math.PI/6, 0, Math.PI*2); cx.fill();
+
+    // Stinger
+    cx.fillStyle = `hsla(${(state.curHue+20)%360}, 100%, 60%, 1)`;
+    cx.beginPath(); cx.moveTo(-s*0.5, -s*0.1); cx.lineTo(-s*0.9, 0); cx.lineTo(-s*0.5, s*0.1); cx.fill();
+    
+    // Cyber Eye
+    cx.fillStyle = '#f00';
+    cx.shadowColor = '#f00'; cx.shadowBlur = 10;
+    cx.fillRect(s*0.3, -s*0.15, s*0.2, s*0.1);
+    cx.shadowBlur = 0;
 }
 
 function drawApexDrone(cx, s, drawState) {
@@ -541,4 +526,125 @@ function drawMegalodon(cx, s, drawState) {
     cx.beginPath(); cx.arc(s * 0.3, -s * 0.12, 4, 0, Math.PI * 2); cx.fill();
     cx.fillStyle = `hsla(${finH}, 100%, 50%, 1)`;
     cx.beginPath(); cx.arc(s * 0.31, -s * 0.12, 2, 0, Math.PI * 2); cx.fill();
+}
+
+export function drawCoin(cx, s, char, t) {
+    const th = t * 0.005;
+    cx.save();
+    
+    // Glow effect matching character
+    cx.shadowColor = `hsla(${state.curHue}, 100%, 70%, 1)`;
+    cx.shadowBlur = 10;
+    
+    switch (char) {
+        case 'SHARK':
+            const shMain = `hsla(${state.curHue}, 60%, 40%, 1)`;
+            cx.rotate(Math.sin(th * 2) * 0.2);
+            cx.fillStyle = shMain;
+            cx.beginPath(); cx.ellipse(0, 0, s*0.5, s*0.3, 0, 0, Math.PI*2); cx.fill();
+            cx.beginPath(); cx.moveTo(-s*0.3, 0); cx.lineTo(-s*0.7, -s*0.25); cx.lineTo(-s*0.7, s*0.25); cx.fill();
+            cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(s*0.2, -s*0.1, 2, 0, Math.PI*2); cx.fill();
+            break;
+
+        case 'CAT':
+            const msBody = `hsla(${state.curHue}, 60%, 75%, 1)`;
+            const msEar = `hsla(${state.curHue}, 60%, 55%, 1)`;
+            cx.rotate(Math.sin(th * 4) * 0.1);
+            cx.fillStyle = msBody;
+            cx.fillRect(-s*0.4, -s*0.2, s*0.7, s*0.4); // Body
+            cx.beginPath(); cx.moveTo(s*0.3, -s*0.2); cx.lineTo(s*0.6, 0); cx.lineTo(s*0.3, s*0.2); cx.fill(); // Snout
+            cx.fillStyle = msEar;
+            cx.fillRect(s*0.1, -s*0.4, s*0.25, s*0.25); // Ear
+            cx.fillStyle = '#000';
+            cx.fillRect(s*0.25, -s*0.1, 3, 3); // Eye
+            cx.fillStyle = '#f68';
+            cx.fillRect(s*0.55, -2, 4, 4); // Nose
+            // Tail
+            cx.strokeStyle = msEar; cx.lineWidth = 2.5;
+            cx.beginPath(); cx.moveTo(-s*0.4, 0); cx.quadraticCurveTo(-s*0.8, -s*0.5, -s*0.9, -s*0.1); cx.stroke();
+            break;
+
+        case 'BEE':
+            const jarBody = `hsla(40, 100%, 50%, 0.9)`; // Honey gold
+            const jarLid = `hsla(${state.curHue}, 50%, 30%, 1)`;
+            cx.rotate(Math.sin(th * 3) * 0.15);
+            
+            // Jar glass
+            cx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            cx.fillRect(-s*0.35, -s*0.3, s*0.7, s*0.6);
+            
+            // Honey inside
+            cx.fillStyle = jarBody;
+            cx.fillRect(-s*0.3, -s*0.1, s*0.6, s*0.35);
+            
+            // Lid
+            cx.fillStyle = jarLid;
+            cx.fillRect(-s*0.4, -s*0.45, s*0.8, s*0.15);
+            
+            // Highlight
+            cx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            cx.fillRect(-s*0.2, -s*0.2, s*0.1, s*0.3);
+            break;
+
+        case 'DRONE':
+            const batHue = state.curHue;
+            cx.rotate(Math.sin(th * 2) * 0.2);
+            cx.fillStyle = '#1a1a24';
+            cx.fillRect(-s*0.3, -s*0.5, s*0.6, s*1.0); // Casing
+            cx.fillStyle = `hsla(${batHue}, 100%, 55%, 1)`;
+            cx.fillRect(-s*0.3, -s*0.1, s*0.6, s*0.6); // Charge level
+            cx.fillStyle = '#aaa';
+            cx.fillRect(-s*0.15, -s*0.6, s*0.3, s*0.1); // Tip
+            cx.fillStyle = '#fff';
+            cx.font = `bold ${s*0.5}px "Space Mono", monospace`;
+            cx.textAlign = 'center'; cx.textBaseline = 'middle';
+            cx.fillText('⚡', 0, s*0.25);
+            break;
+
+        case 'GHOST':
+            cx.globalAlpha = 0.6;
+            const drift = Math.sin(th * 4) * 2;
+            cx.translate(0, drift);
+            cx.fillStyle = '#fff';
+            cx.beginPath(); cx.arc(0, 0, s*0.4, 0, Math.PI*2); cx.fill();
+            cx.fillStyle = '#000';
+            cx.fillRect(-s*0.1, -s*0.1, s*0.1, s*0.1); // Spooky eye
+            cx.globalAlpha = 1;
+            break;
+
+        case 'UFO':
+            const ufMain = `hsla(${state.curHue}, 100%, 70%, 1)`;
+            const ufSec = `hsla(${state.curHue}, 100%, 90%, 0.5)`;
+            cx.rotate(th);
+            cx.fillStyle = ufMain;
+            cx.beginPath(); cx.ellipse(0, 0, s*0.3, s*0.5, 0, 0, Math.PI*2); cx.fill();
+            cx.fillStyle = ufSec;
+            cx.beginPath(); cx.arc(0, -s*0.15, s*0.2, 0, Math.PI*2); cx.fill();
+            break;
+
+        case 'NINJA':
+            const njSec = `hsla(${state.curHue}, 100%, 50%, 1)`;
+            cx.rotate(th * 3);
+            cx.fillStyle = '#111';
+            cx.fillRect(-s*0.5, -s*0.1, s*1.0, s*0.2);
+            cx.fillRect(-s*0.1, -s*0.5, s*0.2, s*1.0);
+            cx.fillStyle = njSec;
+            cx.fillRect(-s*0.15, -s*0.15, s*0.3, s*0.3); // Core red/hue dot
+            break;
+
+        case 'CUBE':
+        default:
+            const cbMain = `hsla(${state.curHue}, 100%, 85%, 1)`;
+            cx.rotate(th * 2);
+            cx.globalAlpha = 0.8;
+            cx.fillStyle = cbMain;
+            cx.fillRect(-s*0.4, -s*0.4, s*0.8, s*0.8);
+            cx.globalAlpha = 0.6;
+            cx.fillStyle = '#fff';
+            cx.fillRect(-s*0.2, -s*0.2, s*0.4, s*0.4);
+            cx.globalAlpha = 1;
+            break;
+    }
+    
+    cx.restore();
 }

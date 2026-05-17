@@ -1,9 +1,9 @@
-import { drawCube, drawCat, drawFox, drawDrone, drawGhost, drawUFO, drawNinja, drawShark } from './characters.js';
+import { drawCube, drawCat, drawBee, drawDrone, drawGhost, drawUFO, drawNinja, drawShark } from './characters.js';
 
 const CHARS = [
     { id: 'CUBE',  draw: drawCube  },
     { id: 'CAT',   draw: drawCat   },
-    { id: 'FOX',   draw: drawFox   },
+    { id: 'BEE',   draw: drawBee   },
     { id: 'DRONE', draw: drawDrone },
     { id: 'GHOST', draw: drawGhost },
     { id: 'UFO',   draw: drawUFO   },

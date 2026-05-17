@@ -1,5 +1,5 @@
 export const C = {
-    W: 900, H: 500, PX: 150, PS: 32, GAP: 96, SPD: 200, MBH: 30, GS: 0.09, GM: 18, DUR: 60,
+    W: 900, H: 500, PX: 150, PS: 32, GAP: 128, SPD: 200, MBH: 30, GS: 0.15, GM: 26, DUR: 60,
     COL: { BG: '#020205', PL: '#e0faff', BB: 'rgba(10, 40, 100, 0.6)', BL: '#00f0ff', BS: 'rgba(0, 240, 255, 0.3)', ST: '#fff', GR: 'rgba(0, 240, 255, 0.05)' }
 };
 

@@ -1,5 +1,5 @@
 export const Sfx = {
-    ctx: null, ana: null, gain: null, src: null, aud: null, fData: null,
+    ctx: null, ana: null, gain: null, src: null, aud: null, fData: null, tData: null,
 
     init() {
         if (this.ctx) return;
@@ -48,51 +48,26 @@ export const Sfx = {
         return sum / this.fData.length;
     },
 
-    async analyzeBPM(file) {
-        if (!file) return 120;
-        const arrayBuffer = await file.arrayBuffer();
-        const tempCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 44100 * 10, 44100);
-        const buffer = await tempCtx.decodeAudioData(arrayBuffer);
-        const source = tempCtx.createBufferSource();
-        source.buffer = buffer;
-        const filter = tempCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 150;
-        source.connect(filter);
-        filter.connect(tempCtx.destination);
-        source.start(0);
-        const renderedBuffer = await tempCtx.startRendering();
-        const data = renderedBuffer.getChannelData(0);
-        let threshold = 0.75;
-        let peaks = [];
-        for (let i = 0; i < data.length; i++) {
-            if (data[i] > threshold) { peaks.push(i); i += 12000; }
+    getRMS() {
+        if (!this.ana) return 0;
+        if (!this.tData) this.tData = new Uint8Array(this.ana.frequencyBinCount);
+        this.ana.getByteTimeDomainData(this.tData);
+        let sum = 0;
+        for (let i = 0; i < this.tData.length; i++) {
+            const norm = (this.tData[i] - 128) / 128;
+            sum += norm * norm;
         }
-        if (peaks.length < 5) {
-            threshold = 0.5; peaks = [];
-            for (let i = 0; i < data.length; i++) {
-                if (data[i] > threshold) { peaks.push(i); i += 12000; }
-            }
-        }
-        if (peaks.length < 2) return 120;
-        const intervals = [];
-        for (let i = 1; i < peaks.length; i++) intervals.push(peaks[i] - peaks[i - 1]);
-        intervals.sort((a, b) => a - b);
-        const median = intervals[Math.floor(intervals.length / 2)];
-        let bpm = Math.round(60 / (median / 44100));
-        while (bpm < 75) bpm *= 2;
-        while (bpm > 170) bpm /= 2;
-        return Math.round(bpm);
+        return Math.sqrt(sum / this.tData.length);
     },
 
-    async analyzeBeatProfile(file, bpm) {
+    async analyzeBeatProfile(file) {
         try {
             const ab = await file.arrayBuffer();
             const offCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 1, 44100);
             const buf = await offCtx.decodeAudioData(ab);
             const pcm = buf.getChannelData(0);
             const sr = buf.sampleRate;
-            const beatSamples = Math.round(sr * 60 / bpm);
+            const beatSamples = Math.round(sr * 0.5);
             const numBeats = Math.ceil(pcm.length / beatSamples);
             const raw = [];
             let maxVal = 0;
@@ -131,6 +106,13 @@ export const Sfx = {
             g.gain.setValueAtTime(0.12, t);
             g.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
             o.start(); o.stop(t + 0.05);
+        } else if (type === 'coin') {
+            o.type = 'sine';
+            o.frequency.setValueAtTime(880, t);
+            o.frequency.setValueAtTime(1760, t + 0.05);
+            g.gain.setValueAtTime(0.2, t);
+            g.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+            o.start(); o.stop(t + 0.15);
         }
     }
 };
